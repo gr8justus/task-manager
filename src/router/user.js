@@ -8,7 +8,21 @@ const userRouter = express.Router();
 
 // create / write into db
 userRouter.post('/users', async (req, res) => {
-    const user = new User(req.body)
+    const user = new User(req.body);
+
+    // checks if keys conforms to model's
+    const validKeys = ['name', 'age', 'email', 'password'];
+    const updateKeys = Object.keys(req.body);
+    const validateKeys = updateKeys.every((key) => validKeys.includes(key));
+
+    // keys does not conform to model's
+    if (!validateKeys) {
+        return res.status(400).send({
+            error: 'Invalid field(s)!',
+            fields: validKeys
+        });
+    }
+
     try {
         const save = await user.save()
         res.status(201).send(save)
@@ -16,6 +30,19 @@ userRouter.post('/users', async (req, res) => {
         res.status(400).send(e.message)
     }
 });
+
+// login using email and password
+userRouter.post('/users/login', async (req, res) => {
+    try {
+        const user = await User.findByCredentials(req.body.email, req.body.password)
+        
+        // errors not thrown as expected.
+
+        res.send(user)
+    } catch (e) {
+        res.status(400).send()
+    }
+})
 
 // read from db
 userRouter.get('/users', async (req, res) => {
