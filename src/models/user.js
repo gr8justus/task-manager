@@ -1,9 +1,10 @@
-'use strict';
+// 'use strict';
 
 // Modules required
 import mongoose from 'mongoose'
 import validator from 'validator'
 import bcrypt from 'bcryptjs'
+import jwt from 'jsonwebtoken'
 
 // Houses the blueprint of user collection
 const userSchema = mongoose.Schema({
@@ -42,10 +43,25 @@ const userSchema = mongoose.Schema({
                 throw new Error('Password can not include the phrase "password"!')
             }
         }
-    }
+    },
+    tokens: [{
+        token: {
+            type: String,
+            required: true
+        }
+    }]
 });
 
-// Custom function to handle user authentication
+// custom function to handle token generation || binds on an instance of the model -> [methods]
+userSchema.methods.generateToken = async function () {
+    const token = await jwt.sign({ _id: this._id.toString() }, 'taskmanagerapp');
+
+    this.tokens = this.tokens.concat({token})
+    await this.save()
+    return token
+}
+
+// Custom function to handle user authentication || binds on the model -> [statics]
 userSchema.statics.findByCredentials = async (email, password) => {
     const user = await User.findOne({ email })
 
