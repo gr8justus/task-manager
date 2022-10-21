@@ -7,13 +7,14 @@ import { User } from '../component.js';
 const auth = async (req, res, next) => {
     try {        
         const token = await req.header('Authorization').replace('Bearer ', '');
-        const extractId = jwt.verify(token, 'taskmanagerapp');
-        const user = await User.find({_id: extractId._id, 'tokens.token': token});  
+        const verifyToken = jwt.verify(token, 'taskmanagerapp');
+        const user = await User.find({_id: verifyToken._id, 'tokens.token': token});  
         
         if (!user) {
-            throw new Error();
+            res.status(400).send({error: 'Invalid token!'});
         }
 
+        req.id = verifyToken._id;
         req.token = token;
         req.user = user;
         next();

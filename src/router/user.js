@@ -33,38 +33,27 @@ userRouter.post('/users/login', async (req, res) => {
     }
 });
 
-
+// logout from a session
 userRouter.post('/users/logout', auth, async (req, res) => {
     try {
-        req.user.tokens = req.user.tokens.filter((token) => {
-            return token.token !== req.token
-        })
-        await req.user.save()
+        const user = await User.findById(req.id);
+        user.tokens = user.tokens.filter((token) => token.token !== req.token);
 
-        res.send()
+        await user.save();
+        res.send('Logged out successfully!');
     } catch (e) {
-        res.status(500).send()
+        res.status(500).send();
     }
-})
-
-
-// logout from a session
-// userRouter.post('/users/logout', auth, async (req, res) => {
-//     try {
-//         req.user.tokens = req.user.tokens.filter((token) => token.token !== req.token);
-//         await req.user.save();
-//         res.send();
-//     } catch (e) {
-//         res.status(500).send();
-//     }
-// });
+});
 
 // logout from all session
 userRouter.post('/users/logoutAll', auth, async (req, res) => {
+    const user = await User.findById(req.id);
     try {
-        req.user.tokens = [];
-        await req.user.save();
-        res.send();
+        user.tokens = [];
+
+        user.save();
+        res.send('Logged out successfully from all sessions!');
     } catch (e) {
         res.status(500).send();
     }
@@ -75,25 +64,8 @@ userRouter.get('/users/me', auth, async (req, res) => {
     res.send(req.user)
 });
 
-userRouter.get('/users/:id', async (req, res) => {
-    const id = req.params.id
-    try {
-        const user = await User.findById(id)
-        res.send(user)
-    } catch (e) {
-        res.status(404).send('No matching user with id: ' + id + ' found!')
-    }
-});
-
 // update db
-userRouter.patch('/users/:id', async (req, res) => {
-    const id = req.params.id;
-
-    // checks id length
-    if (id.length < 24) {
-        return res.status(400).send('id can not be less than 24 characters!');
-    }
-
+userRouter.patch('/users/me', auth, async (req, res) => {
     // checks if update keys conforms to model's before overwriting
     const validKeys = ['name', 'age', 'email', 'password'];
     const updateKeys = Object.keys(req.body);
@@ -108,39 +80,25 @@ userRouter.patch('/users/:id', async (req, res) => {
     }
     
     try {    
-        const user = await User.findById(id)
-        
+        const user = await User.findById(req.id);        
         // Keys looped to be updated. For loop used to accommodate middleware -bcrypt.
         // drawback: validation does not take effect has stated in the model.
         // Method "findByIdAndUpdate" would have been used.
         updateKeys.forEach((update) => user[update] = req.body[update]);
+
         await user.save();
-
-        // id not found
-        if (!user) {
-            return res.status(404).send('No matching user with id: ' + id + ' found for update!')
-        }
-
-        // user details overwritten
         res.send(user);
-
     }   catch (e) {
         res.status(400).send(e.message);
     }
 });
 
-userRouter.delete('/users/:id', async (req, res) => {
+userRouter.delete('/users/me', auth, async (req, res) => {
     try {
-        const id = req.params.id;
-        const user = await User.findByIdAndDelete(id);
-
-        if (!user) {
-            res.status(404).send('No matching user with id: ' + id + ' found for delete!');
-        }
-
-        res.send(user);
+        await User.deleteOne({_id: req.id});
+        res.send();
     } catch (e) {
-        res.status(400).send(e.message);
+        res.status(500).send(e.message);
     }
 });
 
