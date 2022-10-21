@@ -52,42 +52,54 @@ const userSchema = mongoose.Schema({
     }]
 });
 
+// custom function to hide some object parameters
+userSchema.methods.toJSON = function () {
+    const userObject = this.toObject();
+
+    // values of parameters to be hidden
+    delete userObject.password;
+    delete userObject.tokens;
+
+    return userObject;
+}
+
 // custom function to handle token generation || binds on an instance of the model -> [methods]
 userSchema.methods.generateToken = async function () {
-    const token = await jwt.sign({ _id: this._id.toString() }, 'taskmanagerapp');
+    const token = jwt.sign({ _id: this._id.toString() }, 'taskmanagerapp');
 
-    this.tokens = this.tokens.concat({token})
-    await this.save()
-    return token
+    this.tokens = this.tokens.concat({token});
+    await this.save();
+
+    return token;
 }
 
 // Custom function to handle user authentication || binds on the model -> [statics]
 userSchema.statics.findByCredentials = async (email, password) => {
-    const user = await User.findOne({ email })
+    const user = await User.findOne({ email });
 
     if (!user) {
-        throw new Error('Unable to login')
+        throw new Error('Unable to login');
     }
 
     // checks if inputted password matches to that of db 
-    const isMatch = await bcrypt.compare(password, user.password)
+    const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
-        throw new Error('Unable to login')
+        throw new Error('Unable to login');
     }
 
-    return user
+    return user;
 }
 
 // hash password from plain text
-userSchema.pre('save', async function(next) {
+userSchema.pre('save', function(next) {
     if (this.isModified('password')) {
-        this.password = await bcrypt.hash(this.password, 8);
+        this.password = bcrypt.hash(this.password, 8);
     }
 
     // this method ensures the next block of code is executed
     next();
-})
+});
 
 // User model declaration
 const User = mongoose.model('User', userSchema);
