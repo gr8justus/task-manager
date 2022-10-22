@@ -2,7 +2,7 @@
 
 // Required modules
 import express from 'express';
-import { auth, User } from '../component.js';
+import { auth, User, Task } from '../component.js';
 const userRouter = express.Router();
 
 // create / write into db
@@ -96,7 +96,8 @@ userRouter.patch('/users/me', auth, async (req, res) => {
 userRouter.delete('/users/me', auth, async (req, res) => {
     try {
         await User.deleteOne({_id: req.id});
-        res.send();
+        await Task.deleteMany({owner: req.id});
+        res.send('Account deleted!');
     } catch (e) {
         res.status(500).send(e.message);
     }

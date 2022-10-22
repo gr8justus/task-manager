@@ -1,6 +1,6 @@
 'use strict';
 
-import mongoose from "mongoose"
+import mongoose, { Schema } from "mongoose"
 
 const Task = mongoose.model('Task', {
     description: {
@@ -11,7 +11,13 @@ const Task = mongoose.model('Task', {
     completed: {
         type: Boolean,
         default: false
+    },
+    owner: {
+        type: mongoose.Schema.Types.ObjectId,
+        required: true
     }
 })
+
+
 
 export { Task }

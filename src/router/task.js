@@ -2,38 +2,41 @@
 
 // Required modules
 import express from 'express'
-import { Task } from '../component.js'
+import { Task, auth } from '../component.js'
 
 const taskRouter = express.Router();
 
 // create / write into db
-taskRouter.post('/tasks', async (req, res) => {
-    const task = new Task(req.body)
+taskRouter.post('/tasks', auth, async (req, res) => {
     try {
-        const save = await task.save()
-        res.status(201).send(save)
+        const task = new Task({
+            ...req.body,
+            owner: req.id
+        });
+        await task.save();
+        res.status(201).send(task);
     } catch (e) {
         res.status(400).send(e.message)
     }
 });
 
 // read from db
-taskRouter.get('/tasks', async (req, res) => {
+taskRouter.get('/tasks', auth, async (req, res) => {
     try {
-        const tasks = await Task.find({})
-        res.send(tasks)
+        const tasks = await Task.find({owner: req.id});
+        res.send(tasks);
     } catch (e) {
         res.status(500).send()
     }
 });
 
-taskRouter.get('/tasks/:id', async (req, res) => {
-    const id = req.params.id
+taskRouter.get('/tasks/:id', auth, async (req, res) => {
+    const _id = req.params.id
     try {
-        const task = await Task.findById(id);
-
+        const task = await Task.findOne({_id, owner: req.id});
+        
         if (!task) {
-            return res.status(404).send('Task with id: ' + id + ' does not exist.')
+            return res.status(404).send('Task with id: ' + _id + ' does not exist.')
         }
 
         res.send(task)
@@ -43,16 +46,8 @@ taskRouter.get('/tasks/:id', async (req, res) => {
 });
 
 // update db
-taskRouter.patch('/tasks/:id', async (req, res) => {
-    const id = req.params.id;
-
-    // checks id length.
-    if (id.length < 24) {
-        return res.status(400).send({
-            error: 'id is not valid!',
-            message: 'id should not be less than 24 characters.'
-        })
-    }
+taskRouter.patch('/tasks/:id', auth, async (req, res) => {
+    const _id = req.params.id;
 
     // checks if update keys conforms to model's before overwriting
     const validKeys = ['description', 'completed'];
@@ -68,16 +63,16 @@ taskRouter.patch('/tasks/:id', async (req, res) => {
     }
 
     try {
-        const task = await Task.findById(id);
+        const task = await Task.findOne({_id, owner: req.id});
+
+        // task not found.
+        if (!task) {
+            res.status(404).send('error: No matching task with id: ' + _id + ' found for update!')
+        }
 
         // Keys looped to be updated.
         updateKeys.forEach((update) => task[update] = req.body[update]);
         await task.save();
-
-        // task not found.
-        if (!task) {
-            res.status(404).send('error: No matching task with id: ' + id + ' found for update!')
-        }
 
         // task overwritten
         res.send(task);
@@ -86,19 +81,19 @@ taskRouter.patch('/tasks/:id', async (req, res) => {
     }
 });
 
-taskRouter.delete('/tasks/:id', async (req, res) => {
+taskRouter.delete('/tasks/:id', auth, async (req, res) => {
     try {
-        const id = req.params.id;
-        const task = await Task.findByIdAndDelete(id);
+        const _id = req.params.id;
+        const task = await Task.findOneAndDelete({_id, owner: req.id});
 
         if (!task) {
-            res.status(404).send('No matching user with id: ' + id + ' found for delete!')
+            res.status(404).send('No matching task with id: ' + _id + ' found for delete!');
         }
 
-        res.send(task)
+        res.send('Task successfully deleted!');
     } catch (e) {
-        res.status(400).send(e.message)
+        res.status(400).send(e.message);
     }
 });
 
-export { taskRouter }
+export { taskRouter };

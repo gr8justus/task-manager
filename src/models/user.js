@@ -1,10 +1,10 @@
 // 'use strict';
 
 // Modules required
-import mongoose from 'mongoose'
-import validator from 'validator'
-import bcrypt from 'bcryptjs'
-import jwt from 'jsonwebtoken'
+import mongoose from 'mongoose';
+import validator from 'validator';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 // Houses the blueprint of user collection
 const userSchema = mongoose.Schema({
@@ -52,26 +52,15 @@ const userSchema = mongoose.Schema({
     }]
 });
 
-// custom function to hide some object parameters
-userSchema.methods.toJSON = function () {
-    const userObject = this.toObject();
+// hash password from plain text
+userSchema.pre('save', async function(next) {
+    if (this.isModified('password')) {
+        this.password = await bcrypt.hash(this.password, 8);
+    }
 
-    // values of parameters to be hidden
-    delete userObject.password;
-    delete userObject.tokens;
-
-    return userObject;
-}
-
-// custom function to handle token generation || binds on an instance of the model -> [methods]
-userSchema.methods.generateToken = async function () {
-    const token = jwt.sign({ _id: this._id.toString() }, 'taskmanagerapp');
-
-    this.tokens = this.tokens.concat({token});
-    await this.save();
-
-    return token;
-}
+    // this method ensures the next block of code is executed
+    next();
+});
 
 // Custom function to handle user authentication || binds on the model -> [statics]
 userSchema.statics.findByCredentials = async (email, password) => {
@@ -91,15 +80,26 @@ userSchema.statics.findByCredentials = async (email, password) => {
     return user;
 }
 
-// hash password from plain text
-userSchema.pre('save', function(next) {
-    if (this.isModified('password')) {
-        this.password = bcrypt.hash(this.password, 8);
-    }
+// custom function to handle token generation || binds on an instance of the model -> [methods]
+userSchema.methods.generateToken = async function () {
+    const token = jwt.sign({ _id: this._id.toString() }, 'taskmanagerapp');
 
-    // this method ensures the next block of code is executed
-    next();
-});
+    this.tokens = this.tokens.concat({token});
+    await this.save();
+
+    return token;
+}
+
+// custom function to hide some object parameters
+userSchema.methods.toJSON = function () {
+    const userObject = this.toObject();
+
+    // values of parameters to be hidden
+    delete userObject.password;
+    delete userObject.tokens;
+
+    return userObject;
+}
 
 // User model declaration
 const User = mongoose.model('User', userSchema);
