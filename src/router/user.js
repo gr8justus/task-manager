@@ -61,7 +61,7 @@ userRouter.post('/users/logoutAll', auth, async (req, res) => {
 
 // read from db
 userRouter.get('/users/me', auth, async (req, res) => {
-    res.send(req.user)
+    res.send(req.user);
 });
 
 // update db

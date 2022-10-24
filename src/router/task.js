@@ -2,7 +2,7 @@
 
 // Required modules
 import express from 'express'
-import { Task, auth } from '../component.js'
+import { Task, User, auth } from '../component.js'
 
 const taskRouter = express.Router();
 
@@ -22,9 +22,19 @@ taskRouter.post('/tasks', auth, async (req, res) => {
 
 // read from db
 taskRouter.get('/tasks', auth, async (req, res) => {
+    const match = {};
+
+    if (req.query.completed) {
+        match.completed = req.query.completed === 'true';
+    }
+    
     try {
-        const tasks = await Task.find({owner: req.id});
-        res.send(tasks);
+        const user = await User.findById(req.id).populate({
+            path: 'tasks',
+            match
+        });
+
+        res.send(user.tasks);
     } catch (e) {
         res.status(500).send()
     }

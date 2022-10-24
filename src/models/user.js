@@ -7,7 +7,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
 // Houses the blueprint of user collection
-const userSchema = mongoose.Schema({
+const userSchema = new mongoose.Schema({
     name: {
         type: String,
         required: true,
@@ -50,6 +50,8 @@ const userSchema = mongoose.Schema({
             required: true
         }
     }]
+}, {
+    timestamps: true
 });
 
 // hash password from plain text
@@ -100,6 +102,13 @@ userSchema.methods.toJSON = function () {
 
     return userObject;
 }
+
+// Provides access to task collection from userRouter.
+userSchema.virtual('tasks', {
+    ref: 'Task',
+    localField: '_id',
+    foreignField: 'owner'
+});
 
 // User model declaration
 const User = mongoose.model('User', userSchema);
