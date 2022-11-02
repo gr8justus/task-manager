@@ -87,7 +87,7 @@ userSchema.statics.findByCredentials = async (email, password) => {
 
 // custom function to handle token generation || binds on an instance of the model -> [methods]
 userSchema.methods.generateToken = async function () {
-    const token = jwt.sign({ _id: this._id.toString() }, 'taskmanagerapp');
+    const token = jwt.sign({ _id: this._id.toString() }, process.env.JWT_SECRET);
 
     this.tokens = this.tokens.concat({token});
     await this.save();

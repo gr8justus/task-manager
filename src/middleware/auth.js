@@ -7,7 +7,7 @@ import { User } from '../component.js';
 const auth = async (req, res, next) => {
     try {        
         const token = await req.header('Authorization').replace('Bearer ', '');
-        const verifyToken = jwt.verify(token, 'taskmanagerapp');
+        const verifyToken = jwt.verify(token, process.env.JWT_SECRET);
         const user = await User.find({_id: verifyToken._id, 'tokens.token': token});  
         
         if (!user) {

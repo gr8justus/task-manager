@@ -4,8 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node src/index.js",
-    "test": "nodemon src/index.js"
+    "start": "node src/index",
+    "dev": "env-cmd -f ./config/dev.env nodemon ./src/index",
+    "test": "env-cmd -f ./config/test.env jest --watch"
+  },
+  "jest": {
+    "testEnvironment": "node"
   },
   "repository": {
     "type": "git",
@@ -28,6 +32,8 @@
     "validator": "^13.7.0"
   },
   "devDependencies": {
+    "env-cmd": "^10.1.0",
+    "jest": "^29.2.2",
     "nodemon": "^2.0.20"
   },
   "type": "module"
